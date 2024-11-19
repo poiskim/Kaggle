@@ -71,15 +71,49 @@ class ReflexAgent(Agent):
         "*** YOUR CODE HERE ***"
 
         x, y = newPos
+
+        def getDist(i, j, x=x, y=y):
+            return abs(i-x) + abs(j-y)
+
         dist = []
         for s in newGhostStates:
             i, j = s.getPosition()
-            dist.append(abs(i-x) + abs(j-y))
-
-        if min(dist) <= 4:
-            return -1000000
+            dist.append(getDist(i, j))
         
-        return successorGameState.getScore()
+        if min(dist) == 0:
+            return -1000000
+        elif min(dist) == 1:
+            return -100000
+        elif min(dist) == 2:
+            return -10000
+
+        nowFood = currentGameState.getFood()
+        q = util.Queue()
+        visited = {(x, y)}
+        q.push((x, y, 0))
+        di = [1, 0, -1, 0]
+        dj = [0, 1, 0, -1]
+
+        while not q.isEmpty():
+            i, j, c = q.pop()
+            if i < 0 or j < 0:
+                continue
+            try:
+                if nowFood[i][j]:
+                    return successorGameState.getScore() - c
+            except: continue
+
+            for d in range(4):
+                ni = i + di[d]
+                nj = j + dj[d]
+
+                if (ni, nj) in visited:
+                    continue
+
+                visited.add((ni,nj))
+                q.push((ni, nj, c+1))
+
+        return successorGameState.getScore() - 200
 
 def scoreEvaluationFunction(currentGameState):
     """
@@ -153,4 +187,3 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
         util.raiseNotDefined()
-
