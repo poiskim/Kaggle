@@ -101,6 +101,8 @@ class ReflexAgent(Agent):
             try:
                 if nowFood[i][j]:
                     return successorGameState.getScore() - c
+                if successorGameState.hasWall(i, j):
+                    continue
             except: continue
 
             for d in range(4):
@@ -174,6 +176,53 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
+
+        from pacman import GameState
+
+        def selectMinMaxNode(depth, agentIndex, state : GameState):
+            #depth를 넘어섰다면 그만하기
+            if depth > self.depth : 
+                return state.getScore()
+
+            if state.isWin():
+                return 1234567890
+            
+            if state.isLose():
+                return -1234567890
+            
+            #현재 노드에서 받을 수 있는 점수 리스트 가져오기
+            miniMaxList = getMiniMaxList(depth, agentIndex, state)
+
+            #index에 따라 최소, 최대 선택
+            if agentIndex == 0:
+                minimaxScore = max(miniMaxList)
+            else:
+                minimaxScore = min(miniMaxList)
+
+            bestIndices = [index for index in range(len(miniMaxList)) if miniMaxList[index] == minimaxScore]
+            chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+            #리턴
+            return minimaxScore, chosenIndex
+
+        #Seeing all legal action in given state and get minimax score with list type and nextState
+        def getMiniMaxList(depth, agentIndex, state : GameState):
+            nextIndex = agentIndex + 1
+
+            n = state.getNumAgents()
+            if nextIndex >= n:
+                nextIndex -= n
+                depth += 1
+            
+            miniMaxList = []
+            for action in state.getLegalActions():
+                print(state, action)
+                nextState = state.generateSuccessor(agentIndex, action)
+                miniMaxList.append(selectMinMaxNode(nextIndex, depth, nextState)[0])
+            
+            return miniMaxList
+
+        _, index = selectMinMaxNode(0, 0, gameState)
+        return gameState.getLegalActions()[index]
         util.raiseNotDefined()
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
