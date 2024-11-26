@@ -185,11 +185,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
             if depth >= self.depth : 
                 return state.getScore(), 0
 
-            if state.isWin():
-                return 1234567890, 0
-            
-            if state.isLose():
-                return -1234567890, 0
+            if state.isWin() or state.isLose():
+                return state.getScore(), 0
             
             #현재 노드에서 받을 수 있는 점수 리스트 가져오기
             miniMaxList = getMiniMaxList(depth, agentIndex, state)
@@ -239,4 +236,71 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
+
+        from pacman import GameState
+
+        def selectMinMaxNode(depth, agentIndex, supre = float("INF"), infi = -float("INF"), state : GameState = gameState):
+            #depth를 넘어섰다면 그만하기
+            if depth >= self.depth : 
+                return state.getScore(), 0, supre, infi
+
+            if state.isWin() or state.isLose():
+                return state.getScore(), 0, supre, infi
+            
+            if agentIndex == 0:
+                minimaxScore = -float("INF")  
+            else :
+                minimaxScore = float("INF")
+            
+            bestIndices = []
+
+            #인덱스가 0이라면 하한 갱신, 인덱스가 0이 아니라면 상한 갱신
+            gen = getMiniMaxList(depth, agentIndex, supre, infi, state)
+            for idx, score in enumerate(gen): 
+                if depth == 0 and agentIndex == 1 : print(score)
+                if agentIndex == 0:
+                    if score > minimaxScore : 
+                        infi = score
+                        minimaxScore = score
+                        bestIndices = [idx]
+                    elif score == minimaxScore:
+                        bestIndices.append(idx)
+                else:
+                    if score < minimaxScore :
+                        supre = score
+                        minimaxScore = score
+                        bestIndices = [idx]
+                    elif score == minimaxScore:
+                        bestIndices.append(idx)
+
+                if infi > supre:
+                    return minimaxScore, idx, supre, infi
+            
+            chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+            #리턴
+            return minimaxScore, chosenIndex, supre, infi
+
+        #Seeing all legal action in given state and get minimax score with list type and nextState
+        def getMiniMaxList(depth, agentIndex, supre, infi, state : GameState):
+            nextIndex = agentIndex + 1
+
+            n = state.getNumAgents()
+            if nextIndex >= n:
+                nextIndex -= n
+                depth += 1
+            
+            # print(agentIndex, depth, state.getLegalActions())
+            # print(state)
+            for action in state.getLegalActions(agentIndex):
+                nextState = state.generateSuccessor(agentIndex, action)
+                score, _, supre, infi = selectMinMaxNode(depth, nextIndex, supre, infi, nextState)
+                if agentIndex == 0 : 
+                    infi = score
+                else :
+                    supre = score
+                # if depth == 0 and  nextIndex == 1  : print(infi, supre)
+                yield score
+
+        _, index, _, _ = selectMinMaxNode(0, 0)
+        return gameState.getLegalActions()[index]
         util.raiseNotDefined()
