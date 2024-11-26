@@ -178,27 +178,29 @@ class MinimaxAgent(MultiAgentSearchAgent):
         "*** YOUR CODE HERE ***"
 
         from pacman import GameState
+        # print(gameState)
 
         def selectMinMaxNode(depth, agentIndex, state : GameState):
             #depth를 넘어섰다면 그만하기
-            if depth > self.depth : 
-                return state.getScore()
+            if depth >= self.depth : 
+                return state.getScore(), 0
 
             if state.isWin():
-                return 1234567890
+                return 1234567890, 0
             
             if state.isLose():
-                return -1234567890
+                return -1234567890, 0
             
             #현재 노드에서 받을 수 있는 점수 리스트 가져오기
             miniMaxList = getMiniMaxList(depth, agentIndex, state)
+            # print(depth, agentIndex, miniMaxList)
 
             #index에 따라 최소, 최대 선택
             if agentIndex == 0:
                 minimaxScore = max(miniMaxList)
             else:
                 minimaxScore = min(miniMaxList)
-
+            
             bestIndices = [index for index in range(len(miniMaxList)) if miniMaxList[index] == minimaxScore]
             chosenIndex = random.choice(bestIndices) # Pick randomly among the best
             #리턴
@@ -213,11 +215,13 @@ class MinimaxAgent(MultiAgentSearchAgent):
                 nextIndex -= n
                 depth += 1
             
+            # print(agentIndex, depth, state.getLegalActions())
+            # print(state)
             miniMaxList = []
-            for action in state.getLegalActions():
-                print(state, action)
+            for action in state.getLegalActions(agentIndex):
+                # print(state, action)
                 nextState = state.generateSuccessor(agentIndex, action)
-                miniMaxList.append(selectMinMaxNode(nextIndex, depth, nextState)[0])
+                miniMaxList.append(selectMinMaxNode(depth, nextIndex, nextState)[0])
             
             return miniMaxList
 
