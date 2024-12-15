@@ -142,40 +142,20 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
     def runValueIteration(self):
 
         "*** YOUR CODE HERE ***"
-        nowUpdate = set()
-        nowUpdate.add(self.mdp.getStartState())
+        states = self.mdp.getStates()
 
-        for state in self.mdp.getStates():
+        for state in states:
             self.values[state] = 0
 
-        for _ in range(self.iterations):
-            print(f'now Update : {nowUpdate}')
-            nextUpdate = set()
-            nextValues = util.Counter()
+        for idx in range(self.iterations):
+            state = states[idx%len(states)]
 
-            for state in nowUpdate:
-                if self.mdp.isTerminal(state):
-                    continue
+            if self.mdp.isTerminal(state):
+                continue
 
-                action = self.computeActionFromValues(state)
-                nextValues[state] = self.computeQValueFromValues(state, action)
+            action = self.computeActionFromValues(state)
+            self.values[state] = self.computeQValueFromValues(state, action)
 
-                for nexState, probability in self.mdp.getTransitionStatesAndProbs(state, action):
-                    if probability > 0.0:
-                        nextUpdate.add(nexState)
-
-                # for action in self.mdp.getPossibleActions(state):
-                #     for nexState, _ in self.mdp.getTransitionStatesAndProbs(state, action):
-                #         nextUpdate.add(nexState)
-            
-            #update
-            print('update list start...')
-            for nextState, value in nextValues.items():
-                print(nextState, value)
-                self.values[nextState] = value
-            print('update list end...')
-            #next update list
-            nowUpdate = nextUpdate
 
 class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
     """
@@ -185,7 +165,7 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
         (see mdp.py) on initialization and runs prioritized sweeping value iteration
         for a given number of iterations using the supplied parameters.
     """
-    def __init__(self, mdp, discount = 0.9, iterations = 100, theta = 1e-5):
+    def __init__(self, mdp : mdp.MarkovDecisionProcess, discount = 0.9, iterations = 100, theta = 1e-5):
         """
           Your prioritized sweeping value iteration agent should take an mdp on
           construction, run the indicated number of iterations,
@@ -197,3 +177,47 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
 
+        states = self.mdp.getStates()
+        pq = util.PriorityQueue()
+        predecessor = {}
+
+        for state in states:
+            self.values[state] = 0
+            
+            for action in self.mdp.getPossibleActions(state):
+                for nextState, probaility in self.mdp.getTransitionStatesAndProbs(state, action):
+                    if nextState not in predecessor:
+                        predecessor[nextState] = set()
+
+                    if probaility > 0:
+                        predecessor[nextState].add(state)
+
+        for state in states:
+            if self.mdp.isTerminal(state):
+                continue
+
+            action = self.computeActionFromValues(state)
+            value = self.computeQValueFromValues(state, action)
+            diff = abs(value - self.values[state])
+            pq.push(state, -diff)
+        
+        for _ in range(self.iterations):
+            if pq.isEmpty():
+                break
+            
+            state = pq.pop()
+
+            if not self.mdp.isTerminal(state):
+                action = self.computeActionFromValues(state)
+                value = self.computeQValueFromValues(state, action)
+                self.values[state] = value
+
+            if state not in predecessor:
+                continue
+
+            for prevState in predecessor[state]:
+                action = self.computeActionFromValues(prevState)
+                value = self.computeQValueFromValues(prevState, action)
+                diff = abs(value - self.values[prevState])
+                if diff > self.theta:
+                    pq.update(prevState, -diff)
